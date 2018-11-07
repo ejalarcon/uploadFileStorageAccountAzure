@@ -7,69 +7,68 @@ import java.io.InputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 public class UnZip {
 
-    private static Logger log = LoggerFactory.getLogger(UnZip.class);
+	private final static Logger log = Logger.getLogger(UnZip.class);
 
-    public void unZipIt(InputStream inputStream, AzureUpload azureUpload) {
+	public void unZipIt(InputStream inputStream, AzureUpload azureUpload) {
 
-	byte[] buffer = new byte[2048];
+		byte[] buffer = new byte[2048];
 
-	try {
-	    log.info("Se va a descomprimir fichero zip");
-	    ZipInputStream zis = new ZipInputStream(inputStream);
+		try {
+			log.info("Se va a descomprimir fichero zip");
+			ZipInputStream zis = new ZipInputStream(inputStream);
 
-	    ZipEntry ze = zis.getNextEntry();
+			ZipEntry ze = zis.getNextEntry();
 
-	    while (ze != null) {
+			while (ze != null) {
 
-		String fileName = ze.getName();
+				String fileName = ze.getName();
 
-		if (!ze.isDirectory()) {
-		    log.info("Fichero a dentro de zip,nombre = " + fileName);
+				if (!ze.isDirectory()) {
+					log.info("Fichero a dentro de zip,nombre = " + fileName);
 
-		    ByteArrayOutputStream fos = new ByteArrayOutputStream();
-		    int len;
-		    while ((len = zis.read(buffer)) > 0) {
-			fos.write(buffer, 0, len);
-		    }
+					ByteArrayOutputStream fos = new ByteArrayOutputStream();
+					int len;
+					while ((len = zis.read(buffer)) > 0) {
+						fos.write(buffer, 0, len);
+					}
 
-		    log.info("Se obtiene ByteArrayOutputStream de la entrada del zip");
+					log.info("Se obtiene ByteArrayOutputStream de la entrada del zip");
 
-		    InputStream sourceStream = new ByteArrayInputStream(fos.toByteArray());
-		    try {
+					InputStream sourceStream = new ByteArrayInputStream(fos.toByteArray());
+					try {
 
-			log.info("Antes de iniciar subida de fichero uploadBlob");
+						log.info("Antes de iniciar subida de fichero uploadBlob");
 
-			azureUpload.uploadBlob(fileName, sourceStream, ze.getSize());
+						azureUpload.uploadBlob(fileName, sourceStream, ze.getSize());
 
-			log.info("Blob almacenado: " + fileName);
+						log.info("Blob almacenado: " + fileName);
 
-		    } catch (Exception e) {
-			log.error("Error subiendo blob: " + fileName, e);
-		    } finally {
-			fos.close();
-			sourceStream.close();
-		    }
+					} catch (Exception e) {
+						log.error("Error subiendo blob: " + fileName, e);
+					} finally {
+						fos.close();
+						sourceStream.close();
+					}
 
-		} else {
-		    log.info("Directorio dentro de zip: " + fileName);
+				} else {
+					log.info("Directorio dentro de zip: " + fileName);
+				}
+				ze = zis.getNextEntry();
+			}
+
+			zis.closeEntry();
+			zis.close();
+
+			log.info("Done unzip");
+		} catch (IOException ex) {
+
+			log.error("Erro descomprimiendo fichero", ex);
 		}
-		ze = zis.getNextEntry();
-	    }
 
-	    zis.closeEntry();
-	    zis.close();
-
-	    log.info("Done unzip");
-	} catch (IOException ex) {
-
-	    log.error("Erro descomprimiendo fichero", ex);
 	}
-
-    }
 
 }
