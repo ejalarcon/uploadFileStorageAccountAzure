@@ -3,6 +3,7 @@ package com.softtek.testing;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.net.URLConnection;
 import java.security.InvalidKeyException;
 
 import org.apache.log4j.Logger;
@@ -15,42 +16,46 @@ import com.microsoft.azure.storage.blob.CloudBlockBlob;
 
 public class AzureUpload {
 
-	private CloudStorageAccount storageAccount;
-	private CloudBlobClient blobClient = null;
-	private CloudBlobContainer container = null;
+    private CloudStorageAccount storageAccount;
+    private CloudBlobClient blobClient = null;
+    private CloudBlobContainer container = null;
 
-	private final static Logger log = Logger.getLogger(AzureUpload.class);
+    private final static Logger log = Logger.getLogger(AzureUpload.class);
 
-	public AzureUpload(String accountName, String accountKey, String endpointSuffix, String containerName)
-			throws InvalidKeyException, URISyntaxException, StorageException {
+    public AzureUpload(String accountName, String accountKey, String endpointSuffix, String containerName)
+	    throws InvalidKeyException, URISyntaxException, StorageException {
 
-		String storageConnectionString = this.getStorageConnectionString(accountName, accountKey, endpointSuffix);
-		storageAccount = CloudStorageAccount.parse(storageConnectionString);
-		log.info("CloudStorageAccount creada");
+	String storageConnectionString = this.getStorageConnectionString(accountName, accountKey, endpointSuffix);
+	storageAccount = CloudStorageAccount.parse(storageConnectionString);
+	log.info("CloudStorageAccount creada");
 
-		blobClient = storageAccount.createCloudBlobClient();
-		log.info("CloudBlobClient creado");
+	blobClient = storageAccount.createCloudBlobClient();
+	log.debug("CloudBlobClient creado");
 
-		container = blobClient.getContainerReference(containerName);
-		log.info("CloudBlobContainer creada");
-	}
+	container = blobClient.getContainerReference(containerName);
+	log.info("CloudBlobContainer creada");
+    }
 
-	public void uploadBlob(String name, InputStream sourceStream, long length)
-			throws URISyntaxException, StorageException, IOException {
+    public void uploadBlob(String name, InputStream sourceStream, long length)
+	    throws URISyntaxException, StorageException, IOException {
 
-		log.info("Iniciando uploadBlob...");
+	log.info("Iniciando uploadBlob...");
 
-		CloudBlockBlob blob = container.getBlockBlobReference(name);
-		log.info("CloudBlockBlob creado");
+	CloudBlockBlob blob = container.getBlockBlobReference(name);
 
-		blob.upload(sourceStream, length);
+	log.debug("CloudBlockBlob creado");
 
-		log.info("Blob " + name + " subido OK");
-	}
+	String mimeType = URLConnection.guessContentTypeFromName(name);
 
-	private String getStorageConnectionString(String accountName, String accountKey, String endpointSuffix) {
-		String storageConnectionString = "DefaultEndpointsProtocol=https;AccountName=" + accountName + ";AccountKey="
-				+ accountKey + ";EndpointSuffix=" + endpointSuffix;
-		return storageConnectionString;
-	}
+	blob.getProperties().setContentType(mimeType);
+	blob.upload(sourceStream, length);
+
+	log.info("Blob " + name + " subido OK del tipo " + mimeType);
+    }
+
+    private String getStorageConnectionString(String accountName, String accountKey, String endpointSuffix) {
+	String storageConnectionString = "DefaultEndpointsProtocol=https;AccountName=" + accountName + ";AccountKey="
+		+ accountKey + ";EndpointSuffix=" + endpointSuffix;
+	return storageConnectionString;
+    }
 }
